@@ -21,48 +21,69 @@ public static class Bezier
         return p0123;
     }
 
-    public static Vector3 GetPoint4(float t, params Vector3[] points)
-    {
-        //if (points.Length == 1) return points[0];
-
-        //Vector3[] pointsTemp = new Vector3[points.Length-1];
-        //for (int i = 0; i<points.Length-1; i++) {
-        //    Vector3 p = Vector3.Lerp(points[i], points[i+1], t);
-        //    pointsTemp[i] = p;
-        //}
-
-        //GetPoint4(t, pointsTemp);
-        if (points.Length == 0) return new Vector3();
-
-        Vector3[] processPoints = new Vector3[points.Length];
-        for (int i = 0; i<processPoints.Length; i++) processPoints[i] = points[i];
-
-        Vector3[] pointsTemp;
-
-        while (processPoints.Length > 1) {
-            pointsTemp = new Vector3[processPoints.Length-1];
-            for (int j = 0; j<processPoints.Length-1; j++) {
-                Vector3 p = Vector3.Lerp(processPoints[j], processPoints[j+1], t);
-                pointsTemp[j] = p;
-            }
-            processPoints = new Vector3[pointsTemp.Length];
-            for (int i = 0; i<processPoints.Length; i++) processPoints[i] = pointsTemp[i];
-        }
-
-        Vector3 resPoint = processPoints[0];
-        return resPoint;
-    }
-
-    public static Vector3 GetPoint2(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
+    public static Vector3 GetPoint(float t, params Vector3[] points)
     {
         t = Mathf.Clamp01(t);
         float oneMinusT = 1f - t;
 
-        return 
-            oneMinusT * oneMinusT * oneMinusT * p0 +
-            3f * oneMinusT * oneMinusT * t * p1 +
-            3f * oneMinusT * t * t * p2 +
-            t * t * t * p3;
+        if(points.Length == 4) {
+            return
+            oneMinusT * oneMinusT * oneMinusT * points[0] +
+            3f * oneMinusT * oneMinusT * t * points[1] +
+            3f * oneMinusT * t * t * points[2] +
+            t * t * t * points[3];
+        }
+        else {
+            if (points.Length == 0) return new Vector3();
+
+            Vector3[] processPoints = new Vector3[points.Length];
+            for (int i = 0; i < processPoints.Length; i++) processPoints[i] = points[i];
+
+            Vector3[] pointsTemp;
+
+            while (processPoints.Length > 1) {
+                pointsTemp = new Vector3[processPoints.Length - 1];
+                for (int j = 0; j < processPoints.Length - 1; j++) {
+                    Vector3 p = Vector3.Lerp(processPoints[j], processPoints[j + 1], t);
+                    pointsTemp[j] = p;
+                }
+                processPoints = new Vector3[pointsTemp.Length];
+                for (int i = 0; i < processPoints.Length; i++) processPoints[i] = pointsTemp[i];
+            }
+
+            Vector3 resPoint = processPoints[0];
+            return resPoint;
+        }
+    }
+
+    public static float GetParameterT(Vector3 pos, params Vector3[] points3D)
+    {
+        float t = 0;
+        int n = points3D.Length;
+        if (n != 4) return t;
+
+        Vector2 pos2D = new Vector2();
+        pos2D.x = pos.x;
+        pos2D.y = pos.z;
+        Vector2[] points = new Vector2[n];
+        for (int i = 0; i < n; i++) {
+            points[i].x = points3D[i].x;
+            points[i].y = points3D[i].z;
+        }
+
+        float oneMinusT = 0;
+        Vector2 tempPos = new Vector2();
+        float dist = 100;
+
+        while (dist > 2f && t < 1f) {
+            oneMinusT = 1f - t;
+            tempPos = oneMinusT * oneMinusT * oneMinusT * points[0] + 3f * oneMinusT * oneMinusT * t * points[1] + 3f * oneMinusT * t * t * points[2] + t * t * t * points[3];
+            dist = Vector3.Distance(pos2D, tempPos);
+            t += 0.001f;
+        }
+
+        t = t >= 1f ? 0f : t;
+        return t;
     }
 
     public static Vector3 GetPoint3(float t, int count, params Vector3[] points)
@@ -102,6 +123,19 @@ public static class Bezier
             3f * oneMinusT * oneMinusT * (p1 - p0) +
             6f * oneMinusT * t * (p2 - p1) +
             3f * t * t * (p3 - p2);
+    }
+
+    public static Vector3 GetRotation(float t, params Vector3[] points)
+    {
+        if (points.Length != 4) return new Vector3();
+
+        t = Mathf.Clamp01(t);
+        float oneMinusT = 1f - t;
+
+        return
+            3f * oneMinusT * oneMinusT * (points[1] - points[0]) +
+            6f * oneMinusT * t * (points[2] - points[1]) +
+            3f * t * t * (points[3] - points[2]);
     }
 }
 

@@ -7,6 +7,10 @@ TagManager:
   - Obstacle
   - Track
   - Target
+  - StartTurn
+  - EndTurn
+  - UnusedMarker
+  - TurnMarker
   layers:
   - Default
   - TransparentFX
