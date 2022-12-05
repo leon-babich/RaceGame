@@ -12,7 +12,7 @@ public class TestGizmos : MonoBehaviour
         int s = 2;
         foreach(var element in pathElements) {
             if(element.tag != tagMarker) {
-                if (element.tag == "TurnMarker") {
+                if (element.tag == "TurnMarker" || element.tag == "EndTurn") {
                     Gizmos.color = Color.green;
                     s = 2;
                 }

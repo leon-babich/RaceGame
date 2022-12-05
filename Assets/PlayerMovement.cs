@@ -12,9 +12,11 @@ public class PlayerMovement : MonoBehaviour
     public Transform track;
     public Transform track2;
     private List<Transform> pathElementsShow = new List<Transform>();
+    private Transform targetPoint;
     private List<Vector3>[] pathElements = new List<Vector3>[4];
     private List<Vector3> pathElementsMain = new List<Vector3>();
     private List<Transform> pathElementsMainTransform = new List<Transform>();
+    private List<Transform>[] pathElementsMainTransform2 = new List<Transform>[4];
 
     public AudioClip soundMove;
     private AudioSource audioMove;
@@ -30,7 +32,7 @@ public class PlayerMovement : MonoBehaviour
 
     static public float speed = 10f;
     private float speedMax = 50f;
-    private float speedStart = 10f;
+    private float speedStart = 30f;
     public float speedIncrease = 2.0f;
     public float speedDecrease = 4.0f;
     private float speedTurnMax = 2f;
@@ -48,6 +50,11 @@ public class PlayerMovement : MonoBehaviour
 
     bool isTurnLeft;
     bool isTurnRight;
+
+    bool isTestMarkers = false;
+    bool isTestMoving = false;
+    public enum TypeProcess { TestMoving, TestMarkers, TestGame };
+    public TypeProcess typeProcess = TypeProcess.TestMoving;
 
     private void OnCollisionEnter(Collision collision)
     {
@@ -132,6 +139,13 @@ public class PlayerMovement : MonoBehaviour
         foreach (var element in pathElementsShow) {
             Gizmos.DrawSphere(element.position, 2);
         }
+
+        if (targetPoint) {
+            Gizmos.color = Color.blue;
+            Gizmos.DrawSphere(targetPoint.position, 2);
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawLine(m_transform.position, targetPoint.position);
+        }
     }
 
     void Start()
@@ -149,36 +163,39 @@ public class PlayerMovement : MonoBehaviour
         for(int i=0; i<pathElements.Length; i++) {
             pathElements[i] = new List<Vector3>(); 
         }
+        for (int i = 0; i < pathElementsMainTransform2.Length; i++) {
+            pathElementsMainTransform2[i] = new List<Transform>();
+        }
         for (int i = 0; i<track.childCount; i++) {
             Vector3 newVec1 = RotationCounter.getShiftMarker(track.GetChild(i).position, track.GetChild(i).rotation.eulerAngles.y, 7.5f, -1);
             Transform newTransform1 = Instantiate(track.GetChild(i), newVec1, Quaternion.identity);
             pathElements[0].Add(newVec1);
+            pathElementsMainTransform2[0].Add(newTransform1);
 
             Vector3 newVec2 = RotationCounter.getShiftMarker(track.GetChild(i).position, track.GetChild(i).rotation.eulerAngles.y, 2.5f, -1);
+            //Vector3 newVec2 = track.GetChild(i).position;
             Transform newTransform2 = Instantiate(track.GetChild(i), newVec2, Quaternion.identity);
             pathElements[1].Add(newVec2);
+            pathElementsMainTransform2[1].Add(newTransform2);
 
-            Vector3 newVec3 = RotationCounter.getShiftMarker(track.GetChild(i).position, track.GetChild(i).rotation.eulerAngles.y, 1f, 1);
+            Vector3 newVec3 = RotationCounter.getShiftMarker(track.GetChild(i).position, track.GetChild(i).rotation.eulerAngles.y, 2.5f, 1);
             Transform newTransform3 = Instantiate(track.GetChild(i), newVec3, Quaternion.identity);
             pathElements[2].Add(newVec3);
+            pathElementsMainTransform2[2].Add(newTransform3);
 
             Vector3 newVec4 = RotationCounter.getShiftMarker(track.GetChild(i).position, track.GetChild(i).rotation.eulerAngles.y, 7.5f, 1);
             Transform newTransform4 = Instantiate(track.GetChild(i), newVec4, Quaternion.identity);
             pathElements[3].Add(newVec4);
+            pathElementsMainTransform2[3].Add(newTransform4);
 
             //pathElementsShow.Add(newTransform3);
             markersTrack.Add(newVec3);
             //pathElementsMain.Add(track.GetChild(i).position);
-            pathElementsMainTransform.Add(track.GetChild(i));
-            if (track.GetChild(i).tag == "target") Debug.Log("Start turn");
+            //pathElementsMainTransform.Add(track.GetChild(i));
+            pathElementsMainTransform.Add(newTransform4);
         }
 
-        for (int i = 0; i < track2.childCount; i++) {
-            //pathElementsMain.Add(track2.GetChild(i).position);
-            //pathElementsShow.Add(track2.GetChild(i));
-        }
-
-            //pathElementsShow = createBezier(pathElementsShow);
+        targetPoint = Instantiate(track.GetChild(0), m_transform.position, Quaternion.identity);
 
         for (int i=0; i<pathElements.Length; i++) {
             trackController.setMarkersTrack(pathElements[i], i);
@@ -189,23 +206,28 @@ public class PlayerMovement : MonoBehaviour
         //turner.setTarget(ang, transform.rotation.eulerAngles.y);
 
         //transform.position = pathElements[2][0];
-        movingProccessor = new MovingProccessor(transform.position, pathElementsMainTransform);
+        movingProccessor = new MovingProccessor(m_transform.position, pathElementsMainTransform, pathElementsMainTransform2);
+        //movingProccessor.setLeftTrack();
+        movingProccessor.setTrack(1);
+        movingProccessor.startProcess();
         //TEST
-        Vector3[] targets = movingProccessor.getAllTargets();
-        for (int i = 0; i < targets.Length; i++) {
-            Transform newTransform = Instantiate(track2.GetChild(0), targets[i], Quaternion.identity);
-            pathElementsShow.Add(newTransform);
-        }
-
-        //while(movingProccessor.setNext()) {
-        //    targets = movingProccessor.getAllTargets();
-        //    for (int i = 0; i < targets.Length; i++) {
-        //        Transform newTransform = Instantiate(track2.GetChild(0), targets[i], Quaternion.identity);
-        //        pathElementsShow.Add(newTransform);
-        //    }
+        //Vector3[] targets = movingProccessor.getAllTargets();
+        //for (int i = 0; i < targets.Length; i++) {
+        //    Transform newTransform = Instantiate(track2.GetChild(0), targets[i], Quaternion.identity);
+        //    pathElementsShow.Add(newTransform);
         //}
 
-        //movingProccessor.restart();
+        //if(typeProcess == TypeProcess.TestMarkers) {
+        //    while (movingProccessor.setNext()) {
+        //        targets = movingProccessor.getAllTargets();
+        //        for (int i = 0; i < targets.Length; i++) {
+        //            Transform newTransform = Instantiate(track2.GetChild(0), targets[i], Quaternion.identity);
+        //            pathElementsShow.Add(newTransform);
+        //        }
+        //    }
+
+        //    movingProccessor.restart();
+        //}
         //
     }
 
@@ -221,41 +243,76 @@ public class PlayerMovement : MonoBehaviour
     bool isTest = true;
     bool isTestPath = true;
     int numPath = 0;
+    bool isSetTestMarkers = true;
     void Update()
     {
-        if (Input.GetKey("left") || IsClickTurnLeft)
-            isTurnLeft = true;
-        else isTurnLeft = false;
+        if(typeProcess == TypeProcess.TestGame) {
+            if (Input.GetKey("left") || IsClickTurnLeft)
+                isTurnLeft = true;
+            else isTurnLeft = false;
 
-        if (Input.GetKey("right") || IsClickTurnRight)
-            isTurnRight = true;
-        else isTurnRight = false;
+            if (Input.GetKey("right") || IsClickTurnRight)
+                isTurnRight = true;
+            else isTurnRight = false;
 
-        //if (IsClickAccelerator || Input.GetKey("f")) {
-        //    increaseSpeed();
-        //}
-        //else if (speed > 5) speed -= 1 * Time.deltaTime;
+            if (IsClickAccelerator || Input.GetKey("f")) {
+                increaseSpeed();
+            }
+            else if (speed > 5) speed -= 1 * Time.deltaTime;
 
-        if (IsClickBrekes || Input.GetKey("d")) {
-            decreaseSpeed();
+            if (IsClickBrekes || Input.GetKey("d")) {
+                decreaseSpeed();
+            }
+        }
+        else if(typeProcess == TypeProcess.TestMoving) {
+            if (Input.GetKeyDown("q")) {
+                movingProccessor.changeTrafficLane(m_transform.position, false);
+                targetPoint.position = movingProccessor.getTarget();
+            }
+            else if (Input.GetKeyDown("e")) {
+                movingProccessor.changeTrafficLane(m_transform.position, true);
+                targetPoint.position = movingProccessor.getTarget();
+            }
+        }
+        else if(typeProcess == TypeProcess.TestMarkers) {
+            if (Input.GetKeyDown("q")) {
+                if (typeProcess == TypeProcess.TestMarkers) clearShowList();
+                movingProccessor.setLeftTrack();
+            }
+            else if (Input.GetKeyDown("e")) {
+                if (typeProcess == TypeProcess.TestMarkers) clearShowList();
+                movingProccessor.setRightTrack();
+            }
+
+            if (isSetTestMarkers) {
+                do {
+                    Vector3[] targets = movingProccessor.getAllTargets();
+                    for (int i = 0; i < targets.Length; i++) {
+                        Transform newTransform = Instantiate(track2.GetChild(0), targets[i], Quaternion.identity);
+                        pathElementsShow.Add(newTransform);
+                    }
+                }
+                while (movingProccessor.setNext());
+
+                isSetTestMarkers = false;
+            }
         }
 
         //testMoving();
         //testDraw();
 
-
         //Test
-        if (Input.GetKey("t") && isTest) {
-            debugTest();
-            isTest = false;
-        } else if (!Input.GetKey("t")) isTest = true;
+        //if (Input.GetKey("t") && isTest) {
+        //    debugTest();
+        //    isTest = false;
+        //} else if (!Input.GetKey("t")) isTest = true;
 
         
-        if (Input.GetKey("e") && isTestPath) {
-            trackController.setCurrentPath(numPath++);
-            if (numPath >= pathElements.Length) numPath = 0;
-            isTestPath = false;
-        } else if (!Input.GetKey("e")) isTestPath = true;
+        //if (Input.GetKey("e") && isTestPath) {
+        //    trackController.setCurrentPath(numPath++);
+        //    if (numPath >= pathElements.Length) numPath = 0;
+        //    isTestPath = false;
+        //} else if (!Input.GetKey("e")) isTestPath = true;
         //
 
         for (int i = 0; i < listTimerCollisions.Count; i++) {
@@ -272,18 +329,33 @@ public class PlayerMovement : MonoBehaviour
         //    audioMove.time = 1.5f;
     }
 
+    void clearShowList()
+    {
+        //foreach (var element in pathElementsShow) {
+        //    Destroy(element);
+        //}
+        pathElementsShow.Clear();
+        movingProccessor.restart();
+        isSetTestMarkers = true;
+    }
+
     private void FixedUpdate()
     {
         float t = Time.fixedDeltaTime;
 
-        //if (isTurnLeft) {
-        //    Quaternion turnTo = Quaternion.Euler(0, -90, 0);
-        //    body.transform.rotation = Quaternion.Lerp(transform.rotation, turnTo, speedTurn * t);
-        //}
-        //else if (isTurnRight) {
-        //    Quaternion turnTo = Quaternion.Euler(0, 90, 0);
-        //    body.transform.rotation = Quaternion.Lerp(transform.rotation, turnTo, speedTurn * t);
-        //}
+        if (typeProcess == TypeProcess.TestMoving) testMoving();
+        else if(typeProcess == TypeProcess.TestGame) {
+            if (isTurnLeft) {
+                Quaternion turnTo = Quaternion.Euler(0, -90, 0);
+                body.transform.rotation = Quaternion.Lerp(transform.rotation, turnTo, speedTurn * t);
+            }
+            else if (isTurnRight) {
+                Quaternion turnTo = Quaternion.Euler(0, 90, 0);
+                body.transform.rotation = Quaternion.Lerp(transform.rotation, turnTo, speedTurn * t);
+            }
+
+            body.MovePosition(transform.position + transform.TransformDirection(Vector3.forward * speed * t));
+        }
 
         //New
         //if (turner.turn == Turner.Turn.Left) {
@@ -297,7 +369,6 @@ public class PlayerMovement : MonoBehaviour
 
         //turner.checkReady(transform.rotation.eulerAngles.y);
 
-        testMoving();
         //body.MovePosition(transform.position + transform.TransformDirection(Vector3.forward * speed * t));
         ////
 
@@ -344,13 +415,14 @@ public class PlayerMovement : MonoBehaviour
 
         if (dir.sqrMagnitude < 1f * 1f) {
             movingProccessor.setNext();
+            targetPoint.position = movingProccessor.getTarget();
 
             //Test
-            //Vector3[] targets = movingProccessor.getAllTargets();
-            //for (int i = 0; i < targets.Length; i++) {
-            //    Transform newTransform = Instantiate(track2.GetChild(0), targets[i], Quaternion.identity);
-            //    pathElementsShow.Add(newTransform);
-            //}
+            Vector3[] targets = movingProccessor.getAllTargets();
+            for (int i = 0; i < targets.Length; i++) {
+                Transform newTransform = Instantiate(track2.GetChild(0), targets[i], Quaternion.identity);
+                pathElementsShow.Add(newTransform);
+            }
             //
         }
     }
@@ -381,45 +453,6 @@ public class PlayerMovement : MonoBehaviour
 
         speed -= speedDecrease * Time.deltaTime;
     }
-
-    private List<Transform> createBezier(List<Transform> pathElements)
-    {
-        List<Transform> resElements = new List<Transform>();
-        List<Vector3> markersTrack = new List<Vector3>();
-
-        for (int i = 0; i < pathElements.Count; i++)
-        {
-            //Vector3 vec = pathElements[i].position + new Vector3(0, 0, 3);
-            markersTrack.Add(pathElements[i].position);
-        }
-
-        int n = markersTrack.Count * 10;
-        //Vector3[] points = markersTrack.ToArray();
-        float t;
-        int j = 0;
-        //for (int i = 0; i < points.Length; i++)
-        //{
-        //    t = (float)i / (float)n;
-        //    Vector3 resElement = Bezier.GetPoint4(t, points);
-        //    j = i / 10;
-        //    Transform newTransform = Instantiate(track.GetChild(j), resElement, Quaternion.identity);
-        //    resElements.Add(newTransform);
-        //}
-        Vector3[] points = new Vector3[4];
-        for (int i = 0; i < points.Length; i++)
-        {
-            points[i] = markersTrack[i+2];
-        }
-        for (int i = 0; i < 15; i++)
-        {
-            t = 1f / (float)i;
-            Vector3 resElement = Bezier.GetPoint(t, points);
-            Transform newTransform = Instantiate(track.GetChild(0), resElement, Quaternion.identity);
-            resElements.Add(newTransform);
-        }
-
-        return resElements;
-    }
 }
 
 class MovingProccessor
@@ -430,20 +463,36 @@ class MovingProccessor
     Vector3 targetPos;
     Vector3 startPos;
     List<Transform> listMarker = new List<Transform>();
+    List<Transform>[] listMarker2 = new List<Transform>[4];
     List<Vector3> targets = new List<Vector3>();
     int countDiv = 15;
     int countMarkers = 0;
+    int countMarkersRemember = 0;
     int countTarget = 0;
+    int track = 3;
     bool isStop = false;
 
-    public MovingProccessor(Vector3 pos, List<Transform> list)
+    public MovingProccessor(Vector3 pos, List<Transform> list, List<Transform>[] list2)
     {
         listMarker = list;
+        listMarker2 = list2;
         typeMove = TypeMove.Directly;
+        //Debug.Log("Point for left traffic");
+        //for (int i = 0; i < list2[0].Count; i++) {
+        //    Debug.Log("Point " + i + ": " + list2[0][i].position);
+        //}
 
-        recountTargets();
+        //recountTargets();
 
         startPos = currentPos = pos;
+        //targetPos = targets[countTarget];
+    }
+
+    public void startProcess()
+    {
+        Debug.Log("Set traffic: " + track);
+        recountTargets();
+
         targetPos = targets[countTarget];
     }
 
@@ -462,57 +511,135 @@ class MovingProccessor
         return currentPos;
     }
 
+    public void setLeftTrack()
+    {
+        if (track > 0) track--;
+    }
+
+    public void setRightTrack()
+    {
+        if (track < 3) track++;
+    }
+
+    public void changeTrafficLane(Vector3 pos, bool isRight)
+    {
+        if ((isRight && track >= 3) || (!isRight && track <= 0)) {
+            string strDir = isRight ? "left" : "right";
+            Debug.Log("Traffic can not move " + strDir);
+            return;
+        }
+
+        track += isRight ? 1 : -1;
+        recountTargetsChangeTraffic();
+        currentPos = pos;
+        targetPos = targets[countTarget];
+        //Debug.Log("Set traffic: " + track + ". Next target: " + targetPos);
+    }
+
+    public void setTrack(int n)
+    {
+        if (n >= 0 && n < listMarker2.Length) track = n;
+    }
+
     public bool setNext()
     {
-        if(isStop) return false;
+        if (isStop) return false;
+
         if (++countTarget >= targets.Count) {
             countTarget = 0;
-            if (typeMove != TypeMove.Free) recountTargets();
-            else {
+            recountTargets();
+
+            if (targets.Count == 0) {
                 Debug.Log("Warning! The track is over");
                 isStop = true;
                 return false;
             }
         }
 
-        if (targets.Count == 0) {
-            Debug.Log("Warning! List targets is empty");
-            return false;
-        }
-
         currentPos = targetPos;
-        targetPos = targets[countTarget];
+        if(targets.Count != 0) targetPos = targets[countTarget];
+
         return true;
-        //Debug.Log("Set next: " + targetPos);
     }
 
-    public void recountTargets()
+    void recountTargetsChangeTraffic()
     {
         targets.Clear();
+
         if (typeMove == TypeMove.Directly) {
-            while (countMarkers < listMarker.Count && listMarker[countMarkers].tag != "TurnMarker") {
-                if(listMarker[countMarkers].tag != "UnusedMarker") targets.Add(listMarker[countMarkers].position);
-                countMarkers++;
+            for (int i = countMarkersRemember; i < countMarkers; i++) {
+                if (listMarker2[track][i].tag != "UnusedMarker") targets.Add(listMarker2[track][i].position);
             }
-
-            if (countMarkers >= listMarker.Count) typeMove = TypeMove.Free;
-
-            //if (countMarkers < listMarker2.Count) targets.Add(listMarker2[countMarkers++].position);
-            typeMove = TypeMove.Sinuous;
         }
         else if (typeMove == TypeMove.Sinuous) {
             List<Vector3> tempList = new List<Vector3>();
 
-            while (countMarkers < listMarker.Count && (listMarker[countMarkers].tag == "TurnMarker" || listMarker[countMarkers].tag == "UnusedMarker")) {
-                if (listMarker[countMarkers].tag != "UnusedMarker") tempList.Add(listMarker[countMarkers].position);
+            for (int i = countMarkersRemember; i < countMarkers; i++) {
+                if (listMarker2[track][i].tag != "UnusedMarker") tempList.Add(listMarker2[track][i].position);
+            }
+
+            if (tempList.Count < 10 && tempList.Count >= 3) {
+                float t = 0f;
+                for (int i = 0; i < countDiv; i++, t += 1.0f / countDiv) {
+                    targets.Add(Bezier.GetPoint(t, tempList.ToArray()));
+                }
+                targets.Add(Bezier.GetPoint(1f, tempList.ToArray()));
+            }
+            else {
+                for (int i = 0; i < tempList.Count; i++) {
+                    targets.Add(tempList[i]);
+                }
+            }
+        }
+    }
+
+    void recountTargets()
+    {
+        //Debug.Log("Start calling recountTargets");
+        targets.Clear();
+        countMarkersRemember = countMarkers;
+
+        if (listMarker2[track].Count <= countMarkers) return;
+
+        typeMove = listMarker2[track][countMarkers].tag == "TurnMarker" ? TypeMove.Sinuous : TypeMove.Directly;
+
+        if (typeMove == TypeMove.Directly) {
+            //Debug.Log("Entering into TypeMove: directly");
+            while (countMarkers < listMarker2[track].Count && listMarker2[track][countMarkers].tag != "TurnMarker") {
+                if(listMarker2[track][countMarkers].tag != "UnusedMarker") targets.Add(listMarker2[track][countMarkers].position);
                 countMarkers++;
             }
 
-            if (countMarkers >= listMarker.Count) typeMove = TypeMove.Free;
+            //if (countMarkers >= listMarker2[track].Count) isStop = true;
 
-            typeMove = TypeMove.Directly;
+            //if (targets.Count == 0 && listMarker2[track][countMarkers].tag == "TurnMarker") {
+            //    typeMove = TypeMove.Sinuous;
+            //    recountTargets();
+            //}
 
-            if(tempList.Count < 10 && tempList.Count >= 3) {
+            //typeMove = TypeMove.Sinuous;
+        }
+        else if (typeMove == TypeMove.Sinuous) {
+            //do {
+            //    countSinous();
+            //}
+            //while (listMarker2[track][countMarkers].tag != "TurnMarker");
+
+            List<Vector3> tempList = new List<Vector3>();
+
+            if (countMarkers > 0 && listMarker2[track][countMarkers - 1].tag == "StartTurn") tempList.Add(listMarker2[track][countMarkers - 1].position);
+
+            while (countMarkers < listMarker2[track].Count && listMarker2[track][countMarkers].tag != "EndTurn" && listMarker2[track][countMarkers].tag != "StartTurn" && listMarker2[track][countMarkers].tag != "Untagged") {
+                //while (countMarkers < listMarker2[track].Count && (listMarker2[track][countMarkers].tag == "TurnMarker" || listMarker2[track][countMarkers].tag == "UnusedMarker")) {
+                if (listMarker2[track][countMarkers].tag != "UnusedMarker") tempList.Add(listMarker2[track][countMarkers].position);
+                countMarkers++;
+            }
+
+            if (countMarkers < listMarker2[track].Count && (listMarker2[track][countMarkers].tag == "EndTurn" || listMarker2[track][countMarkers].tag == "StartTurn")) tempList.Add(listMarker2[track][countMarkers++].position);
+
+            //typeMove = TypeMove.Directly;
+
+            if (tempList.Count < 10 && tempList.Count >= 3) {
                 float t = 0f;
                 for (int i = 0; i < countDiv; i++, t += 1.0f / countDiv) {
                     targets.Add(Bezier.GetPoint(t, tempList.ToArray()));
@@ -525,8 +652,41 @@ class MovingProccessor
                 }
             }
 
-            if (targets.Count == 0) {
-                targets.Add(listMarker[countMarkers++].position);
+
+            //if (targets.Count == 0 && !isStop && countMarkers < listMarker2[track].Count) {
+            //    targets.Add(listMarker2[track][countMarkers++].position);
+            //}
+        }
+
+        //if (countMarkers >= listMarker2[track].Count) isStop = true;
+
+        //Debug.Log("Calling recountTargets. Targets: " + targets.Count);
+    }
+
+    void countSinous()
+    {
+        List<Vector3> tempList = new List<Vector3>();
+
+        //if(countMarkers > 0 && listMarker2[track][countMarkers-1].tag == "EndTurn") tempList.Add(listMarker2[track][countMarkers-1].position);
+
+        while (countMarkers < listMarker2[track].Count && listMarker2[track][countMarkers].tag != "EndTurn" && listMarker2[track][countMarkers].tag != "Untagged") {
+            if (listMarker2[track][countMarkers].tag != "UnusedMarker") tempList.Add(listMarker2[track][countMarkers].position);
+            countMarkers++;
+        }
+
+        if (countMarkers >= listMarker2[track].Count) isStop = true;
+        else if (listMarker2[track][countMarkers].tag == "EndTurn") tempList.Add(listMarker2[track][countMarkers++].position);
+
+        if (tempList.Count < 10 && tempList.Count >= 2) {
+            float t = 0f;
+            for (int i = 0; i < countDiv; i++, t += 1.0f / countDiv) {
+                targets.Add(Bezier.GetPoint(t, tempList.ToArray()));
+            }
+            targets.Add(Bezier.GetPoint(1f, tempList.ToArray()));
+        }
+        else {
+            for (int i = 0; i < tempList.Count; i++) {
+                targets.Add(tempList[i]);
             }
         }
     }

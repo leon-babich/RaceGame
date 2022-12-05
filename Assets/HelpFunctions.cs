@@ -233,6 +233,9 @@ public static class RotationCounter
         newMarker.y = marker.y;
         newMarker.z = z1 - s * d * Mathf.Sin(angRad);
 
+        //string strDir = d > 0 ? "right" : "left";
+        //Debug.Log("Counting new point for marker: " + marker + ". Ang: " + ang + ". Dist: " + s + ". Dir: " + strDir + ". Sign dir: " + d + ". New point: " + newMarker);
+
         return newMarker;
     }
 }
