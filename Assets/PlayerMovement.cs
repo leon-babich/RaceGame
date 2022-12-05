@@ -345,12 +345,21 @@ public class PlayerMovement : MonoBehaviour
 
         if (typeProcess == TypeProcess.TestMoving) testMoving();
         else if(typeProcess == TypeProcess.TestGame) {
+            float curAng, tarAng;
+
             if (isTurnLeft) {
-                Quaternion turnTo = Quaternion.Euler(0, -90, 0);
+                curAng = m_transform.rotation.eulerAngles.y;
+                tarAng = curAng - 90;
+                tarAng = tarAng < 0 ? 360 + tarAng : tarAng;
+                Quaternion turnTo = Quaternion.Euler(0, tarAng, 0);
                 body.transform.rotation = Quaternion.Lerp(transform.rotation, turnTo, speedTurn * t);
+                Debug.Log("Target angle: " + tarAng + ". Current angle: " + curAng);
             }
             else if (isTurnRight) {
-                Quaternion turnTo = Quaternion.Euler(0, 90, 0);
+                curAng = m_transform.rotation.eulerAngles.y;
+                tarAng = curAng + 90;
+                tarAng = tarAng >= 360 ? tarAng - 360 : tarAng;
+                Quaternion turnTo = Quaternion.Euler(0, tarAng, 0);
                 body.transform.rotation = Quaternion.Lerp(transform.rotation, turnTo, speedTurn * t);
             }
 
@@ -379,6 +388,7 @@ public class PlayerMovement : MonoBehaviour
     float t = 0;
     int n = 4;
     int currentTargetPoint = 0;
+    float m_graund = 0;
     MovingProccessor movingProccessor;
 
     void testMoving()
@@ -407,15 +417,18 @@ public class PlayerMovement : MonoBehaviour
         //transform.rotation = Quaternion.LookRotation(Bezier.GetRotation(t, points));
 
 
-        Vector3 dir = (movingProccessor.getTarget() - m_transform.position); dir.y = 0;
+        Vector3 dir = movingProccessor.getTarget() - m_transform.position;
+        if(movingProccessor.getTarget().y >= m_transform.position.y) dir.y = m_graund;
         body.MovePosition(m_transform.position + dir.normalized * speed * t);
 
         Quaternion turnTo = Quaternion.LookRotation(dir);
-        m_transform.rotation = Quaternion.Lerp(m_transform.rotation, turnTo, 2 * t);
+        m_transform.rotation = Quaternion.Lerp(m_transform.rotation, turnTo, speed / 4 * t);
 
         if (dir.sqrMagnitude < 1f * 1f) {
             movingProccessor.setNext();
             targetPoint.position = movingProccessor.getTarget();
+            //if ((movingProccessor.getTarget().y > 0) && (movingProccessor.getTarget().y < m_transform.position.y)) m_graund = (movingProccessor.getTarget().y - m_transform.position.y) / 2;
+            //else m_graund = 0;
 
             //Test
             Vector3[] targets = movingProccessor.getAllTargets();
